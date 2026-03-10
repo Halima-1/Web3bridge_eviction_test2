@@ -13,11 +13,11 @@ library CryptoLib {
 
         for(uint i; i < proof.length; i++){
 
-            bytes32 p = proof[i];
+            bytes32 proposal = proof[i];
 
-            hash = hash < p
-                ? keccak256(abi.encodePacked(hash,p))
-                : keccak256(abi.encodePacked(p,hash));
+            hash = hash < proposal
+                ? keccak256(abi.encodePacked(hash,proposal))
+                : keccak256(abi.encodePacked(proposal,hash));
         }
 
         return hash == root;

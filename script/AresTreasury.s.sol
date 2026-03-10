@@ -1,4 +1,4 @@
-// SPDX-License-Identifier:MIT
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
@@ -8,9 +8,11 @@ contract Deploy is Script {
 
     function run() external {
 
-        vm.startBroadcast();
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
-        new AresTreasury(msg.sender);
+        vm.startBroadcast(deployerPrivateKey);
+
+        AresTreasury treasury = new AresTreasury();
 
         vm.stopBroadcast();
     }
