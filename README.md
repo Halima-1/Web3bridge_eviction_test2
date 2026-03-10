@@ -1,43 +1,35 @@
-# AresTreasury Refactor
+# ARES Protocol: Treasury System
 
-This project contains the refactoring work I did for the `AresTreasury` contract. The goal of this task was to take a big, messy single-file smart contract and break it down into clean, modular pieces. I also fixed several security issues and added tests to make sure everything works perfectly.
+This is my code for the ARES Protocol treasury. The assignment was to build a secure treasury system from scratch that can handle lots of money without getting hacked by things like flash-loans or bad governance takeovers. 
 
-## What I Did
+## How It Works
 
-1. **Made it Modular**:
-   Instead of having everything in one huge file, I split the contract into smaller modules. Now we have separate files for:
-   - `Proposal.sol` (handles creating and canceling proposals)
-   - `TimeLock.sol` (handles the delay before a proposal can run)
-   - `AresRewards.sol` (handles the Merkle leaf claiming for rewards)
-   - `AresTreasury.sol` (the main contract that brings them together)
-   - Some libraries for signatures and crypto stuff.
+Instead of putting all the code in one big messy file, I split things up. The main contract is `AresTreasury.sol`, and it uses a few helpers to get the job done:
 
-2. **Fixed Security Bugs**:
-   The old contract had some dangerous vulnerabilities that I fixed:
-   - Anyone could call `setMerkleRoot`. I added an `onlyGovernor` check so only admins can change it.
-   - The `emergencyWithdrawAll` function allowed anyone to drain the treasury! I removed it entirely.
-   - `pause`/`unpause` functions gave too much power to a single owner.
-   - Fixed bad uses of `tx.origin` in `receive()`.
-   - Replaced risky `.transfer` calls with safer `.call`.
+1. **Creating a Proposal (`propose`)**: The governors (admins) can create a proposal to move money or make a contract call. I added a rule called `treasuryLimit` so nobody can drain the whole treasury at once, even if they take over the governance.
+2. **Queueing (`queue`)**: Once a proposal is made, it goes into a waiting line. This starts a timer.
+3. **Execution (`execute`)**: After the timer finishes (2 days), the proposal can finally run. To do this, a governor has to provide a secure signature. I used special math (EIP-712 nonces) to make sure nobody can use the same signature twice.
+4. **Cancellation (`cancel`)**: If something looks wrong while the proposal is waiting in line, a governor can cancel it before it runs.
+5. **Claiming Rewards (`claim`)**: I built a way for users to claim their token rewards. To save on gas fees for thousands of users, I used a Merkle tree. Users just prove they are on the list and get their tokens.
 
-3. **Wrote Tests**:
-   I wrote a full test suite in Foundry (`AresTreasury.t.sol`) to prove the new code works and is secure.
-   
-   - **Happy Path Tests**: I tested that creating a proposal, queuing it, and executing it works like a charm. I also tested the Merkle reward claiming.
-   - **Negative Tests**: I added a total of **12 different negative tests** to make sure the contract blocks bad actions. This includes testing that non-governors can't do admin things, making sure canceled proposals can't be queued or executed, blocking double claims, testing invalid signatures, and stopping execution before the timelock is done.
+## Code Structure
 
-## How to Run It
+Here is how my files are organized to make it easy to read:
 
-If you want to run the tests yourself using Foundry, just use this command:
+- `src/core/AresTreasury.sol`: The main contract that holds the money and handles the final rules.
+- `src/modules/Proposal.sol`: Keeps track of the proposals and makes sure nobody reuses the same proposal ID.
+- `src/modules/TimeLock.sol`: Forces the 2-day waiting period so nothing happens instantly.
+- `src/modules/AresRewards.sol`: The gas-saving Merkle system for users to claim their rewards.
+- `src/libraries/...`: Some extra math files to handle the signatures and Merkle proofs securely.
 
-```shell
-forge test
-```
+## Tests
 
-If you want to see detailed test traces, you can use:
+I wrote a bunch of tests in Foundry in the `test/AresTreasury.t.sol` file. 
+- I tested the happy paths (like making a proposal and watching it succeed).
+- I also wrote 10+ negative tests to prove the system stops hackers (testing things like double-claiming, bad signatures, and trying to skip the waiting line).
+
+To run my tests, just type:
 
 ```shell
 forge test -vvvv
 ```
-
-Everything compiles beautifully without errors, and all 14 tests pass successfully!
