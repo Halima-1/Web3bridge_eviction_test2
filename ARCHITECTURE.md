@@ -15,8 +15,9 @@ This project is designed to securely manage protocol assets, allowing governance
 
      2. Queueing : each proposal has to queue for a particular time before execution which prevents instant execution giving the governance chance to react. This  also ensure proposal pass through commit phases.
 
-     3. Execution
-     4. Cancellation
+     3. Execution:This function is responsible for actually performing the treasury action after the proposal has passed all checks and delays. It check for queued, executed, timelock and signature and it prevents reentrancy, replay, and double execution.
+
+     4. Cancellation:This function allows governance to cancel proposal before it executes. it firstly check if a proposal has been executed because already executed proposal can not be canclled, mark as cancle if not yet executed and emit cancle event.
 
 2. ##TimelockModule
    - Enforces a fixed delay (2 days) before execution, uses a queue mapping to prevent bypass and resistant to timestamp manipulation.
