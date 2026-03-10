@@ -19,7 +19,8 @@ contract AresTreasury is
       error replay_Detected();
      error Invalid_signer();
      error execution_failed();
-     
+      error Already_cancelled();
+
     using SignatureLibraries for bytes32;
 
     bytes32 public DOMAIN_SEPARATOR;
@@ -74,13 +75,13 @@ contract AresTreasury is
 
     function queue(bytes32 id) external onlyGovernor {
 
-        Proposal storage p = proposals[id];
+        Proposal storage proposal = proposals[id];
 
-        require(!p.cancelled);
+        require(!proposal.cancelled);
 
         _queue(id);
 
-        p.queued = true;
+        proposal.queued = true;
     }
 
     function execute(
@@ -88,11 +89,11 @@ contract AresTreasury is
         bytes calldata sig
     ) external nonReentrant {
 
-        Proposal storage p = proposals[id];
+        Proposal storage proposal = proposals[id];
 
-        require(p.queued);
-        require(!p.executed);
-        require(!p.cancelled);
+        require(proposal.queued,  not_queued());
+        require(!proposal.executed, Already_executed());
+        require(!proposal.cancelled, Already_cancelled());
 
         _ready(id);
 
@@ -104,7 +105,7 @@ contract AresTreasury is
                     abi.encode(
                         EXEC_TYPEHASH,
                         id,
-                        p.nonce
+                        proposal.nonce
                     )
                 )
             )
@@ -118,10 +119,10 @@ contract AresTreasury is
 
         usedDigests[digest] = true;
 
-        p.executed = true;
+        proposal.executed = true;
 
         (bool success,) =
-            p.target.call{value:p.value}(p.data);
+            proposal.target.call{value:proposal.value}(proposal.data);
 
         require(success);
     }
