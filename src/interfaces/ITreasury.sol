@@ -8,9 +8,9 @@ interface ITreasury {
         bytes calldata data
     ) external returns (bytes32);
 
-    function queue(bytes32 proposalId) external;
+    function queueProposal(bytes32 proposalId) external;
 
-    function execute(bytes32 proposalId) external;
+    function executeProposal(bytes32 proposalId) external;
 
-    function cancel(bytes32 proposalId) external;
+    function cancelProposal(bytes32 proposalId) external;
 }

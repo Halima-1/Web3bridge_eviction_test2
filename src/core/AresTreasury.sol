@@ -11,13 +11,13 @@ contract AresTreasury is ProposalModule,
        AresRewards
        {
 
-
       error  not_governor();
       error treasuryLimit_Exceeded();
       error Already_executed();
       error not_queued();
       error replay_Detected();
-      Invalid_signer();
+     error Invalid_signer();
+     error execution_failed();
 
     using SigLib for bytes32;
 
@@ -90,6 +90,6 @@ contract AresTreasury is ProposalModule,
 
         (bool success,) = proposal.target.call{value:proposal.value}(proposal.data);
 
-        require(success,"exec fail");
+        require(success, execution_failed());
     }
 }

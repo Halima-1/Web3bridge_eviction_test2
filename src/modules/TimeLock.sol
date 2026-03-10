@@ -5,23 +5,23 @@ contract TimelockModule {
 
     uint256 public constant DELAY = 2 days;
 
-    mapping(bytes32 => uint256) public eta;
+    mapping(bytes32 => uint256) public proposalOnQueue;
 
     event Queued(bytes32 id,uint256 eta);
     event Executed(bytes32 id);
 
     function _queue(bytes32 id) internal {
 
-        require(eta[id] == 0,"already queued");
+        require(proposalOnQueue[id] == 0,"already queued");
 
-        eta[id] = block.timestamp + DELAY;
+        proposalOnQueue[id] = block.timestamp + DELAY;
 
-        emit Queued(id,eta[id]);
+        emit Queued(id,proposalOnQueue[id]);
     }
 
     function _validateExecution(bytes32 id) internal view {
 
-        require(eta[id] != 0,"not queued");
-        require(block.timestamp >= eta[id],"timelock");
+        require(proposalOnQueue[id] != 0,"not queued");
+        require(block.timestamp >= proposalOnQueue[id],"timelock");
     }
 }

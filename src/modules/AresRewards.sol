@@ -7,14 +7,15 @@ contract AresRewards {
 
     using CryptoLib for bytes32[];
 
+    error execution_failed();
+     error AlreadyClaimed();
+    error InvalidProof();
+
     bytes32 public merkleRoot;
 
     mapping(address => bool) public claimed;
 
     event Claimed(address user,uint256 amount);
-
-    error AlreadyClaimed();
-    error InvalidProof();
 
     function _setRoot(bytes32 root) internal {
         merkleRoot = root;
@@ -37,7 +38,9 @@ contract AresRewards {
 
         claimed[msg.sender] = true;
 
-        payable(msg.sender).transfer(amount);
+       (bool success,) = payable(msg.sender).call{value:amount}("");
+
+       if(!success) revert execution_failed();
 
         emit Claimed(msg.sender,amount);
     }
