@@ -1,5 +1,5 @@
 
-# `ARCHITECTURE.md`
+## ARCHITECTURE.md
 
 # ARES Treasury Architecture
 
@@ -32,10 +32,7 @@ This project is designed to securely manage protocol assets, allowing governance
    - The merkle proof verification also Enables gas-efficient verification for thousands of recipients. This is because only the root is stored on-chain and it enable gas efficient verification of thoousands of balances on-chain.
 
 ## Core Contract: AresTreasury.sol
-- Integrates all modules.
-- Manages governors and treasury limits.
-- Executes proposals after cryptographic verification and timelock.
-- Non-reentrant execution and claim patterns.
+- This file Integrates all modules, manages governors and treasury limits, executes proposals after cryptographic verification and timelock.Non-reentrant execution and claim patterns.
 - Ensures safe treasury transfers and mitigates flash-loan governance attacks.
 
 ### Security Boundaries
