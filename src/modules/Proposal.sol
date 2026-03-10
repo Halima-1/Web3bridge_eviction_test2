@@ -11,42 +11,49 @@ contract ProposalModule {
         uint256 nonce;
         bool queued;
         bool executed;
+        bool cancelled;
     }
 
     mapping(bytes32 => Proposal) public proposals;
-
     uint256 public proposalNonce;
 
-    event Proposed(bytes32 id,address proposer);
+    event ProposalCreated(bytes32 id,address proposer);
+    event ProposalCancelled(bytes32 id);
 
     function _createProposal(
         address target,
         uint256 value,
         bytes memory data
-    ) internal returns(bytes32 id) {
+    ) internal returns(bytes32 id){
 
-        proposalNonce++;
+        uint256 nonce = proposalNonce++;
 
         id = keccak256(
-            abi.encode(
-                msg.sender,
-                target,
-                value,
-                data,
-                proposalNonce
-            )
+            abi.encode(msg.sender,target,value,data,nonce)
         );
 
-        proposals[id] = Proposal({
-            proposer: msg.sender,
-            target: target,
-            value: value,
-            data: data,
-            nonce: proposalNonce,
-            queued:false,
-            executed:false
-        });
+        proposals[id] = Proposal(
+            msg.sender,
+            target,
+            value,
+            data,
+            nonce,
+            false,
+            false,
+            false
+        );
 
-        emit Proposed(id,msg.sender);
+        emit ProposalCreated(id,msg.sender);
+    }
+
+    function _cancelProposal(bytes32 id) internal {
+
+        Proposal storage proposal = proposals[id];
+
+        require(!proposal.executed,"executed");
+
+        proposal.cancelled = true;
+
+        emit ProposalCancelled(id);
     }
 }

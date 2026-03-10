@@ -1,46 +1,41 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "../libraries/cryptoLibraries.sol";
+import {CryptoLib} from "../libraries/CryptoLibraries.sol";
 
 contract AresRewards {
 
     using CryptoLib for bytes32[];
-
-    error execution_failed();
-     error AlreadyClaimed();
-    error InvalidProof();
 
     bytes32 public merkleRoot;
 
     mapping(address => bool) public claimed;
 
     event Claimed(address user,uint256 amount);
+    event RootUpdated(bytes32 newRoot);
 
-    function _setRoot(bytes32 root) internal {
+    function _updateRoot(bytes32 root) internal {
         merkleRoot = root;
+        emit RootUpdated(root);
     }
 
-    function claim(
+    function _claim(
         uint256 amount,
-        bytes32[] calldata proof
-    ) external {
+        bytes32[] memory proof
+    ) internal {
 
-        if(claimed[msg.sender]) revert AlreadyClaimed();
+        require(!claimed[msg.sender],"already claimed");
 
         bytes32 leaf = keccak256(
             abi.encode(msg.sender,amount)
         );
 
-        bool valid = proof.verify(merkleRoot,leaf);
-
-        if(!valid) revert InvalidProof();
+        require(
+            proof.verify(merkleRoot,leaf),
+            "invalid proof"
+        );
 
         claimed[msg.sender] = true;
-
-       (bool success,) = payable(msg.sender).call{value:amount}("");
-
-       if(!success) revert execution_failed();
 
         emit Claimed(msg.sender,amount);
     }

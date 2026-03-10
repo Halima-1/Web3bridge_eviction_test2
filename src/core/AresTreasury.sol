@@ -1,95 +1,155 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {ProposalModule} from "../modules/Proposal.sol";
-import {TimelockModule} from "../modules/TimeLock.sol";
-import {AresRewards} from "../modules/AresRewards.sol";
-import {SigLib} from "../libraries/signatureLibraries.sol";
+import "../modules/Proposal.sol";
+import "../modules/TimeLock.sol";
+import "../modules/AresRewards.sol";
+import "../libraries/SignatureLibraries.sol";
 
-contract AresTreasury is ProposalModule,
-       TimelockModule,
-       AresRewards
-       {
+contract AresTreasury is
+    ProposalModule,
+    TimeLock,
+    AresRewards
+{
 
-      error  not_governor();
+ error  not_governor();
       error treasuryLimit_Exceeded();
       error Already_executed();
       error not_queued();
       error replay_Detected();
      error Invalid_signer();
      error execution_failed();
+     
+    using SignatureLibraries for bytes32;
 
-    using SigLib for bytes32;
+    bytes32 public DOMAIN_SEPARATOR;
+
+    bytes32 constant EXEC_TYPEHASH =
+        keccak256(
+            "Execute(bytes32 proposal,uint256 nonce)"
+        );
 
     mapping(address => bool) public governors;
 
     mapping(bytes32 => bool) public usedDigests;
 
-    uint256 public treasuryLimit = 10 ether;
+    uint256 public treasuryLimit = 100 ether;
 
-    event GovernorAdded(address gov);
+    bool internal locked;
 
-    constructor(address _newgov) {
-        governors[_newgov] = true;
+    modifier nonReentrant(){
+        require(!locked);
+        locked = true;
+        _;
+        locked = false;
     }
 
-    modifier onlyGovernor() {
-        require(governors[msg.sender], not_governor());
+    modifier onlyGovernor(){
+        require(governors[msg.sender]);
         _;
     }
 
-    receive() external payable {}
+    constructor(){
 
-    function proposeGovernor(
+        governors[msg.sender] = true;
+
+        DOMAIN_SEPARATOR = keccak256(
+            abi.encode(
+                block.chainid,
+                address(this)
+            )
+        );
+    }
+
+    function propose(
         address target,
         uint256 value,
         bytes calldata data
     ) external onlyGovernor returns(bytes32){
 
-        require(value <= treasuryLimit, treasuryLimit_Exceeded());
+        require(value <= treasuryLimit);
 
         return _createProposal(target,value,data);
     }
 
     function queue(bytes32 id) external onlyGovernor {
 
-        Proposal storage proposal = proposals[id];
+        Proposal storage p = proposals[id];
 
-        require(!proposal.executed, Already_executed());
+        require(!p.cancelled);
 
         _queue(id);
 
-        proposal.queued = true;
+        p.queued = true;
     }
 
-    function executeProposal(
+    function execute(
         bytes32 id,
         bytes calldata sig
-    ) external {
+    ) external nonReentrant {
 
-        Proposal storage proposal = proposals[id];
+        Proposal storage p = proposals[id];
 
-        require(proposal.queued, not_queued());
-        require(!proposal.executed, Already_executed());
+        require(p.queued);
+        require(!p.executed);
+        require(!p.cancelled);
 
-        _validateExecution(id);
+        _ready(id);
 
         bytes32 digest = keccak256(
-            abi.encode(id,block.chainid)
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encode(
+                        EXEC_TYPEHASH,
+                        id,
+                        p.nonce
+                    )
+                )
+            )
         );
 
-        require(!usedDigests[digest], replay_Detected());
+        require(!usedDigests[digest]);
 
         address signer = digest.recover(sig);
 
-        require(governors[signer], Invalid_signer());
+        require(governors[signer]);
 
         usedDigests[digest] = true;
 
-        proposal.executed = true;
+        p.executed = true;
 
-        (bool success,) = proposal.target.call{value:proposal.value}(proposal.data);
+        (bool success,) =
+            p.target.call{value:p.value}(p.data);
 
-        require(success, execution_failed());
+        require(success);
     }
+
+    function cancel(bytes32 id)
+        external
+        onlyGovernor
+    {
+        _cancelProposal(id);
+    }
+
+    function claim(
+        uint256 amount,
+        bytes32[] calldata proof
+    ) external nonReentrant {
+
+        _claim(amount,proof);
+
+       (bool success,) = payable(msg.sender).call{value:amount}("");
+       require(success,"transfer failed");
+    }
+
+    function updateMerkleRoot(bytes32 root)
+        external
+        onlyGovernor
+    {
+        _updateRoot(root);
+    }
+
+    receive() external payable {}
 }

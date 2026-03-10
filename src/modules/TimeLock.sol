@@ -1,27 +1,31 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-contract TimelockModule {
+contract TimeLock {
 
     uint256 public constant DELAY = 2 days;
 
-    mapping(bytes32 => uint256) public proposalOnQueue;
+    mapping(bytes32 => uint256) public eta;
 
     event Queued(bytes32 id,uint256 eta);
-    event Executed(bytes32 id);
 
     function _queue(bytes32 id) internal {
 
-        require(proposalOnQueue[id] == 0,"already queued");
+        require(eta[id] == 0,"queued");
 
-        proposalOnQueue[id] = block.timestamp + DELAY;
+        uint256 executionTime = block.timestamp + DELAY;
 
-        emit Queued(id,proposalOnQueue[id]);
+        eta[id] = executionTime;
+
+        emit Queued(id,executionTime);
     }
 
-    function _validateExecution(bytes32 id) internal view {
+    function _ready(bytes32 id) internal view {
 
-        require(proposalOnQueue[id] != 0,"not queued");
-        require(block.timestamp >= proposalOnQueue[id],"timelock");
+        uint256 executionTime = eta[id];
+
+        require(executionTime != 0,"not queued");
+
+        require(block.timestamp >= executionTime,"delay active");
     }
 }
