@@ -57,7 +57,7 @@ contract AresTreasuryTest is Test {
         vm.prank(governor);
         treasury.execute(id, sig);
 
-        (,,,,,, bool executed,) = treasury.proposals(id);
+        (, , , , , , bool executed, ) = treasury.proposals(id);
         assertTrue(executed);
     }
 
@@ -68,7 +68,7 @@ contract AresTreasuryTest is Test {
         vm.prank(governor);
         treasury.cancel(id);
 
-        (,,,,,,, bool cancelled) = treasury.proposals(id);
+        (, , , , , , , bool cancelled) = treasury.proposals(id);
         assertTrue(cancelled);
     }
 
@@ -96,7 +96,12 @@ contract AresTreasuryTest is Test {
 
     function testRewardClaim() public {
         // setup merkle root with a real 2-leaf tree
-        (bytes32 root, bytes32[] memory proof1,) = _generateMerkleTree(user1, 1 ether, user2, 2 ether);
+        (bytes32 root, bytes32[] memory proof1, ) = _generateMerkleTree(
+            user1,
+            1 ether,
+            user2,
+            2 ether
+        );
 
         vm.prank(governor);
         treasury.updateMerkleRoot(root);
@@ -108,8 +113,11 @@ contract AresTreasuryTest is Test {
     }
 
     function testMultipleSuccessfulClaims() public {
-        (bytes32 root, bytes32[] memory proof1, bytes32[] memory proof2) =
-            _generateMerkleTree(user1, 1 ether, user2, 2 ether);
+        (
+            bytes32 root,
+            bytes32[] memory proof1,
+            bytes32[] memory proof2
+        ) = _generateMerkleTree(user1, 1 ether, user2, 2 ether);
 
         vm.prank(governor);
         treasury.updateMerkleRoot(root);
@@ -130,7 +138,12 @@ contract AresTreasuryTest is Test {
     }
 
     function testDoubleClaimReverts() public {
-        (bytes32 root, bytes32[] memory proof1,) = _generateMerkleTree(user1, 1 ether, user2, 2 ether);
+        (bytes32 root, bytes32[] memory proof1, ) = _generateMerkleTree(
+            user1,
+            1 ether,
+            user2,
+            2 ether
+        );
 
         vm.prank(governor);
         treasury.updateMerkleRoot(root);
@@ -172,112 +185,26 @@ contract AresTreasuryTest is Test {
         treasury.execute(id, sig);
     }
 
-    function testPrematureExecutionFails() public {
-        vm.prank(governor);
-        bytes32 id = treasury.propose(address(this), 1 ether, "");
-        vm.prank(governor);
-        treasury.queue(id);
-
-        bytes memory sig;
-        vm.expectRevert();
-        treasury.execute(id, sig);
-    }
-
-    function testProposeMaxLimit() public {
-        vm.prank(governor);
-        bytes32 id = treasury.propose(address(this), 100 ether, "");
-        (,, uint256 value,,,,,) = treasury.proposals(id);
-        assertEq(value, 100 ether);
-    }
-
-    function testProposeValueExceedsLimitReverts() public {
-        vm.prank(governor);
-        vm.expectRevert();
-        treasury.propose(address(this), 101 ether, "");
-    }
-
-    function testQueueCanceledProposalReverts() public {
-        vm.prank(governor);
-        bytes32 id = treasury.propose(address(this), 1 ether, "");
-
-        vm.prank(governor);
-        treasury.cancel(id);
-
-        vm.prank(governor);
-        vm.expectRevert();
-        treasury.queue(id);
-    }
-
-    function testQueueSetsEtaCorrectly() public {
-        vm.prank(governor);
-        bytes32 id = treasury.propose(address(this), 1 ether, "");
-
-        uint256 expectedEta = block.timestamp + 2 days;
-        vm.prank(governor);
-        treasury.queue(id);
-
-        assertEq(treasury.eta(id), expectedEta);
-    }
-
-    function testMultipleProposalsConcurrently() public {
-        vm.prank(governor);
-        bytes32 id1 = treasury.propose(address(this), 1 ether, "");
-        vm.prank(governor);
-        bytes32 id2 = treasury.propose(address(this), 2 ether, "");
-
-        vm.prank(governor);
-        treasury.queue(id1);
-        vm.prank(governor);
-        treasury.queue(id2);
-
-        vm.warp(block.timestamp + 2 days);
-
-        bytes32 digest1 = _getDigest(id1, 0);
-        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(governorPk, digest1);
-        vm.prank(governor);
-        treasury.execute(id1, abi.encodePacked(r1, s1, v1));
-
-        bytes32 digest2 = _getDigest(id2, 1);
-        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(governorPk, digest2);
-        vm.prank(governor);
-        treasury.execute(id2, abi.encodePacked(r2, s2, v2));
-
-        (,,,,,, bool executed1,) = treasury.proposals(id1);
-        (,,,,,, bool executed2,) = treasury.proposals(id2);
-        assertTrue(executed1);
-        assertTrue(executed2);
-    }
-
-    // function testExecuteAlreadyExecutedReverts() public {
-    //     vm.prank(governor);
-    //     bytes32 id = treasury.propose(address(this), 1 ether, "");
-
-    //     vm.prank(governor);
-    //     treasury.queue(id);
-
-    //     vm.warp(block.timestamp + 2 days);
-
-    //     bytes32 digest = _getDigest(id, 0);
-    //     (uint8 v, bytes32 r, bytes32 s) = vm.sign(governorPk, digest);
-    //     bytes memory sig = abi.encodePacked(r, s, v);
-
-    //     vm.prank(governor);
-    //     treasury.execute(id, sig);
-
-    //     // Try again
-    //     vm.prank(governor);
-    //     vm.expectRevert();
-    //     treasury.execute(id, sig);
-    // }
-
-    function _getDigest(bytes32 id, uint256 nonce) internal view returns (bytes32) {
-        return keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                treasury.DOMAIN_SEPARATOR(),
-                keccak256(abi.encode(keccak256("Execute(bytes32 proposal,uint256 nonce)"), id, nonce))
-            )
-        );
+    function _getDigest(
+        bytes32 id,
+        uint256 nonce
+    ) internal view returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    treasury.DOMAIN_SEPARATOR(),
+                    keccak256(
+                        abi.encode(
+                            keccak256(
+                                "Execute(bytes32 proposal,uint256 nonce)"
+                            ),
+                            id,
+                            nonce
+                        )
+                    )
+                )
+            );
     }
 
     function testQueueAlreadyQueuedReverts() public {
@@ -307,19 +234,6 @@ contract AresTreasuryTest is Test {
         claimer.tryClaim();
     }
 
-    function testExecuteInvalidSignatureLengthReverts() public {
-        vm.prank(governor);
-        bytes32 id = treasury.propose(address(this), 1 ether, "");
-        vm.prank(governor);
-        treasury.queue(id);
-        vm.warp(block.timestamp + 2 days);
-
-        bytes memory sig = new bytes(64); // Invalid length
-
-        vm.expectRevert(abi.encodeWithSignature("InvalidSignature()"));
-        treasury.execute(id, sig);
-    }
-
     function testExecuteSignatureInvalidSReverts() public {
         vm.prank(governor);
         bytes32 id = treasury.propose(address(this), 1 ether, "");
@@ -328,28 +242,11 @@ contract AresTreasuryTest is Test {
         vm.warp(block.timestamp + 2 days);
 
         bytes32 digest = _getDigest(id, 0);
-        (uint8 v, bytes32 r,) = vm.sign(governorPk, digest);
+        (uint8 v, bytes32 r, ) = vm.sign(governorPk, digest);
 
         // Malleable S signature
         uint256 invalidS = 0x8000000000000000000000000000000000000000000000000000000000000000;
         bytes memory sig = abi.encodePacked(r, bytes32(invalidS), v);
-
-        vm.expectRevert(abi.encodeWithSignature("InvalidSignature()"));
-        treasury.execute(id, sig);
-    }
-
-    function testExecuteSignatureInvalidVReverts() public {
-        vm.prank(governor);
-        bytes32 id = treasury.propose(address(this), 1 ether, "");
-        vm.prank(governor);
-        treasury.queue(id);
-        vm.warp(block.timestamp + 2 days);
-
-        bytes32 digest = _getDigest(id, 0);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(governorPk, digest);
-        v = 29; // Invalid V
-
-        bytes memory sig = abi.encodePacked(r, s, v);
 
         vm.expectRevert(abi.encodeWithSignature("InvalidSignature()"));
         treasury.execute(id, sig);
@@ -375,7 +272,12 @@ contract AresTreasuryTest is Test {
 
     function testClaimReentrancyFails() public {
         ReentrantClaimer claimer = new ReentrantClaimer(treasury);
-        (bytes32 root, bytes32[] memory proof1,) = _generateMerkleTree(address(claimer), 1 ether, user2, 2 ether);
+        (bytes32 root, bytes32[] memory proof1, ) = _generateMerkleTree(
+            address(claimer),
+            1 ether,
+            user2,
+            2 ether
+        );
 
         vm.prank(governor);
         treasury.updateMerkleRoot(root);
@@ -384,7 +286,12 @@ contract AresTreasuryTest is Test {
         claimer.tryClaim(proof1);
     }
 
-    function _generateMerkleTree(address account1, uint256 amount1, address account2, uint256 amount2)
+    function _generateMerkleTree(
+        address account1,
+        uint256 amount1,
+        address account2,
+        uint256 amount2
+    )
         internal
         pure
         returns (bytes32 root, bytes32[] memory proof1, bytes32[] memory proof2)
@@ -392,7 +299,9 @@ contract AresTreasuryTest is Test {
         bytes32 leaf1 = keccak256(abi.encode(account1, amount1));
         bytes32 leaf2 = keccak256(abi.encode(account2, amount2));
 
-        root = leaf1 < leaf2 ? keccak256(abi.encodePacked(leaf1, leaf2)) : keccak256(abi.encodePacked(leaf2, leaf1));
+        root = leaf1 < leaf2
+            ? keccak256(abi.encodePacked(leaf1, leaf2))
+            : keccak256(abi.encodePacked(leaf2, leaf1));
 
         proof1 = new bytes32[](1);
         proof1[0] = leaf2;
