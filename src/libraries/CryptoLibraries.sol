@@ -2,22 +2,15 @@
 pragma solidity ^0.8.20;
 
 library CryptoLib {
-
-    function verify(
-        bytes32[] memory proof,
-        bytes32 root,
-        bytes32 leaf
-    ) internal pure returns(bool) {
-
+    function verify(bytes32[] memory proof, bytes32 root, bytes32 leaf) internal pure returns (bool) {
         bytes32 hash = leaf;
 
-        for(uint i; i < proof.length; i++){
-
+        for (uint256 i; i < proof.length; i++) {
             bytes32 proposal = proof[i];
 
             hash = hash < proposal
-                ? keccak256(abi.encodePacked(hash,proposal))
-                : keccak256(abi.encodePacked(proposal,hash));
+                ? keccak256(abi.encodePacked(hash, proposal))
+                : keccak256(abi.encodePacked(proposal, hash));
         }
 
         return hash == root;
