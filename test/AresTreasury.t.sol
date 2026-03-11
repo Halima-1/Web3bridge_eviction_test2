@@ -57,7 +57,7 @@ contract AresTreasuryTest is Test {
         vm.prank(governor);
         treasury.execute(id, sig);
 
-        (, , , , , , bool executed, ) = treasury.proposals(id);
+        (,,,,,, bool executed,) = treasury.proposals(id);
         assertTrue(executed);
     }
 
@@ -68,7 +68,7 @@ contract AresTreasuryTest is Test {
         vm.prank(governor);
         treasury.cancel(id);
 
-        (, , , , , , , bool cancelled) = treasury.proposals(id);
+        (,,,,,,, bool cancelled) = treasury.proposals(id);
         assertTrue(cancelled);
     }
 
@@ -96,12 +96,7 @@ contract AresTreasuryTest is Test {
 
     function testRewardClaim() public {
         // setup merkle root with a real 2-leaf tree
-        (bytes32 root, bytes32[] memory proof1, ) = _generateMerkleTree(
-            user1,
-            1 ether,
-            user2,
-            2 ether
-        );
+        (bytes32 root, bytes32[] memory proof1,) = _generateMerkleTree(user1, 1 ether, user2, 2 ether);
 
         vm.prank(governor);
         treasury.updateMerkleRoot(root);
@@ -113,11 +108,8 @@ contract AresTreasuryTest is Test {
     }
 
     function testMultipleSuccessfulClaims() public {
-        (
-            bytes32 root,
-            bytes32[] memory proof1,
-            bytes32[] memory proof2
-        ) = _generateMerkleTree(user1, 1 ether, user2, 2 ether);
+        (bytes32 root, bytes32[] memory proof1, bytes32[] memory proof2) =
+            _generateMerkleTree(user1, 1 ether, user2, 2 ether);
 
         vm.prank(governor);
         treasury.updateMerkleRoot(root);
@@ -138,12 +130,7 @@ contract AresTreasuryTest is Test {
     }
 
     function testDoubleClaimReverts() public {
-        (bytes32 root, bytes32[] memory proof1, ) = _generateMerkleTree(
-            user1,
-            1 ether,
-            user2,
-            2 ether
-        );
+        (bytes32 root, bytes32[] memory proof1,) = _generateMerkleTree(user1, 1 ether, user2, 2 ether);
 
         vm.prank(governor);
         treasury.updateMerkleRoot(root);
@@ -185,26 +172,14 @@ contract AresTreasuryTest is Test {
         treasury.execute(id, sig);
     }
 
-    function _getDigest(
-        bytes32 id,
-        uint256 nonce
-    ) internal view returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(
-                    "\x19\x01",
-                    treasury.DOMAIN_SEPARATOR(),
-                    keccak256(
-                        abi.encode(
-                            keccak256(
-                                "Execute(bytes32 proposal,uint256 nonce)"
-                            ),
-                            id,
-                            nonce
-                        )
-                    )
-                )
-            );
+    function _getDigest(bytes32 id, uint256 nonce) internal view returns (bytes32) {
+        return keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                treasury.DOMAIN_SEPARATOR(),
+                keccak256(abi.encode(keccak256("Execute(bytes32 proposal,uint256 nonce)"), id, nonce))
+            )
+        );
     }
 
     function testQueueAlreadyQueuedReverts() public {
@@ -242,7 +217,7 @@ contract AresTreasuryTest is Test {
         vm.warp(block.timestamp + 2 days);
 
         bytes32 digest = _getDigest(id, 0);
-        (uint8 v, bytes32 r, ) = vm.sign(governorPk, digest);
+        (uint8 v, bytes32 r,) = vm.sign(governorPk, digest);
 
         // Malleable S signature
         uint256 invalidS = 0x8000000000000000000000000000000000000000000000000000000000000000;
@@ -272,12 +247,7 @@ contract AresTreasuryTest is Test {
 
     function testClaimReentrancyFails() public {
         ReentrantClaimer claimer = new ReentrantClaimer(treasury);
-        (bytes32 root, bytes32[] memory proof1, ) = _generateMerkleTree(
-            address(claimer),
-            1 ether,
-            user2,
-            2 ether
-        );
+        (bytes32 root, bytes32[] memory proof1,) = _generateMerkleTree(address(claimer), 1 ether, user2, 2 ether);
 
         vm.prank(governor);
         treasury.updateMerkleRoot(root);
@@ -286,12 +256,7 @@ contract AresTreasuryTest is Test {
         claimer.tryClaim(proof1);
     }
 
-    function _generateMerkleTree(
-        address account1,
-        uint256 amount1,
-        address account2,
-        uint256 amount2
-    )
+    function _generateMerkleTree(address account1, uint256 amount1, address account2, uint256 amount2)
         internal
         pure
         returns (bytes32 root, bytes32[] memory proof1, bytes32[] memory proof2)
@@ -299,9 +264,7 @@ contract AresTreasuryTest is Test {
         bytes32 leaf1 = keccak256(abi.encode(account1, amount1));
         bytes32 leaf2 = keccak256(abi.encode(account2, amount2));
 
-        root = leaf1 < leaf2
-            ? keccak256(abi.encodePacked(leaf1, leaf2))
-            : keccak256(abi.encodePacked(leaf2, leaf1));
+        root = leaf1 < leaf2 ? keccak256(abi.encodePacked(leaf1, leaf2)) : keccak256(abi.encodePacked(leaf2, leaf1));
 
         proof1 = new bytes32[](1);
         proof1[0] = leaf2;
