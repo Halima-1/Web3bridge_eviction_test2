@@ -26,7 +26,7 @@ This project is designed to securely manage protocol assets, allowing governance
    - Supports Merkle tree-based claims for contributors. and this ensure double claim prevention with the use of mapping. Root updates by governors also occurs in the file.
   
 
-4. ##Signature Libraries
+4. ##SignatureLibraries
    -In this file EIP712 structured signatures was Implemented. This prevents signature replay, malleability, and cross-chain replay. Also, nonce tracking per proposal ensures same signature is not used twice.
 
 5. ##CryptoLibraries

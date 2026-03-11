@@ -1,6 +1,6 @@
 # ARES Protocol: Treasury System
 
-This is my code for the ARES Protocol treasury. The assignment was to build a secure treasury system from scratch that can handle lots of money without getting hacked by things like flash-loans or bad governance takeovers. 
+This is my code for the ARES Protocol treasury. The Task was to build a secure treasury system from scratch that can handle lots of money without getting hacked by things like flash-loans or bad governance takeovers. 
 
 ## How It Works
 
@@ -33,3 +33,13 @@ To run my tests, just type:
 ```shell
 forge test -vvvv
 ```
+
+## References
+
+During the design of this protocol, the following resources were consulted for general concepts and security practices:
+
+- [Decentralized Autonomous Organizations: a Step-by-Step guide](https://medium.com/@cromewar/decentralized-autonomous-organizations-a-step-by-step-guide-468c11179ced)
+- [What is On-chain Governance?](https://www.cube.exchange/what-is/on-chain-governance)
+- [How to set up on-chain governance](https://docs.openzeppelin.com/contracts/4.x/governance)
+- [Setting Up a Treasury Management System for Tokens](https://www.chainscorelabs.com/en/guides/social-tokens-and-community-economics/social-token-standards/setting-up-a-treasury-management-system-for-tokens)
+- [How to Implement a Treasury Governance Framework](https://www.chainscorelabs.com/en/guides/social-tokens-and-community-economics/community-treasury-management/how-to-implement-a-treasury-governance-framework)

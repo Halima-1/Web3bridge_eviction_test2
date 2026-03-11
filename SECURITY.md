@@ -24,4 +24,5 @@ Here is a breakdown of the major security risks the assignment mentioned and how
 ## Remaining Risks
 
 1.Governors Going Bad: My system depends on the "governors" being honest. Since they are the only ones who can queue and execute proposals, if a hacker manages to steal the governor's private keys, they could technically queue a bad proposal. The 2-day delay gives the community time to react, but if nobody notices, the hacker will win eventually.
+
 2.Bad Proposal Data: If the governors vote for a proposal that calls a broken external contract, the money will still be lost. My system safely executes the proposal, but it doesn't know if the target contract itself is safe.
