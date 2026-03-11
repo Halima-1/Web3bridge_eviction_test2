@@ -5,18 +5,18 @@ library SignatureLibraries {
 
     error InvalidSignature();
 
-    function recover(bytes32 digest, bytes memory sig) internal pure returns(address) {
+    function recover(bytes32 digest, bytes memory siginature) internal pure returns(address) {
 
-        if(sig.length != 65) revert InvalidSignature();
+        if(siginature.length != 65) revert InvalidSignature();
 
         bytes32 r;
         bytes32 s;
         uint8 v;
 
         assembly {
-            r := mload(add(sig,32))
-            s := mload(add(sig,64))
-            v := byte(0,mload(add(sig,96)))
+            r := mload(add(siginature,32))
+            s := mload(add(siginature,64))
+            v := byte(0,mload(add(siginature,96)))
         }
 
         if(uint256(s) > 

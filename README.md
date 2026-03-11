@@ -4,9 +4,9 @@ This is my code for the ARES Protocol treasury. The assignment was to build a se
 
 ## How It Works
 
-Instead of putting all the code in one big messy file, I split things up. The main contract is `AresTreasury.sol`, and it uses a few helpers to get the job done:
+Instead of putting all the code in one big messy file, I split things up. The main contract is AresTreasury.sol, and it uses a few helpers to get the job done:
 
-1. **Creating a Proposal (`propose`)**: The governors (admins) can create a proposal to move money or make a contract call. I added a rule called `treasuryLimit` so nobody can drain the whole treasury at once, even if they take over the governance.
+1. **Creating a Proposal (propose)**: The governors (admins) can create a proposal to move money or make a contract call. I added a rule called `treasuryLimit` so nobody can drain the whole treasury at once, even if they take over the governance.
 2. **Queueing (`queue`)**: Once a proposal is made, it goes into a waiting line. This starts a timer.
 3. **Execution (`execute`)**: After the timer finishes (2 days), the proposal can finally run. To do this, a governor has to provide a secure signature. I used special math (EIP-712 nonces) to make sure nobody can use the same signature twice.
 4. **Cancellation (`cancel`)**: If something looks wrong while the proposal is waiting in line, a governor can cancel it before it runs.

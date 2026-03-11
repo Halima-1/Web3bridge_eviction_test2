@@ -20,6 +20,7 @@ contract AresTreasury is
      error Invalid_signer();
      error execution_failed();
       error Already_cancelled();
+      error transaction_failed();
 
     using SignatureLibraries for bytes32;
 
@@ -46,7 +47,7 @@ contract AresTreasury is
     }
 
     modifier onlyGovernor(){
-        require(governors[msg.sender]);
+        require(governors[msg.sender], not_governor());
         _;
     }
 
@@ -68,7 +69,7 @@ contract AresTreasury is
         bytes calldata data
     ) external onlyGovernor returns(bytes32){
 
-        require(value <= treasuryLimit);
+        require(value <= treasuryLimit, treasuryLimit_Exceeded());
 
         return _createProposal(target,value,data);
     }
@@ -77,7 +78,7 @@ contract AresTreasury is
 
         Proposal storage proposal = proposals[id];
 
-        require(!proposal.cancelled);
+        require(!proposal.cancelled, Already_cancelled());
 
         _queue(id);
 
@@ -111,11 +112,11 @@ contract AresTreasury is
             )
         );
 
-        require(!usedDigests[digest]);
+        require(!usedDigests[digest], replay_Detected());
 
         address signer = digest.recover(sig);
 
-        require(governors[signer]);
+        require(governors[signer],Invalid_signer() );
 
         usedDigests[digest] = true;
 
@@ -124,7 +125,7 @@ contract AresTreasury is
         (bool success,) =
             proposal.target.call{value:proposal.value}(proposal.data);
 
-        require(success);
+        require(success, transaction_failed());
     }
 
     function cancel(bytes32 id)
@@ -142,7 +143,7 @@ contract AresTreasury is
         _claim(amount,proof);
 
        (bool success,) = payable(msg.sender).call{value:amount}("");
-       require(success,"transfer failed");
+       require(success,transaction_failed());
     }
 
     function updateMerkleRoot(bytes32 root)
